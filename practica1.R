@@ -2,6 +2,7 @@ library(readr)
 library(caret)
 library(dplyr)
 library(Hmisc)
+library(ggplot2)
 
 kc_house_data <- read_csv("data/kc_house_data.csv")
 inTraining <- createDataPartition(pull(kc_house_data), p = .7, list = FALSE,times = 1)
@@ -10,10 +11,12 @@ house_training <- slice(kc_house_data, inTraining)
 house_testing <- slice(kc_house_data, -inTraining)
 
 describe(house_training)
+Hmisc::describe(house_training)
 
 # EDA
-
 # Primer vistazo.
+ids_duplicados <- house_training[which(duplicated(house_training$id)),]
+View(ids_duplicados)
 
 # ID: hay 80 repetidos.
 
