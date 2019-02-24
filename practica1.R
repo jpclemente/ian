@@ -18,47 +18,30 @@ Hmisc::describe(house_training)
 ids_duplicados <- house_training[which(duplicated(house_training$id)),]
 View(ids_duplicados)
 
+# Eva
 # ID: hay 80 repetidos.
-
-# - date: 
-
 # price: posible re-escalado.
-
-# - bedrooms: posible error en 33. Dato muy atípico.
-
-#     imputar como la media
-
 # bathrooms: OK. Los americanos son raros
-
-# - floors: OK. Los americanos son raros
-
 # waterfront: OK
-
-# - sqft_living: OK
-
 # sqft_lot: OK
-
-# - view: OK
-
 # condition: OK
-
-# - grade: posibilidad de reducir a 3 valores.
-
 # sqft_above: Alta correlacion con sqft_living???
-
-# - sqft_basement: 0 son no aplica, pues no tiene sentido.
-
 # yr_built: (mirar con cariño)
-
-# - yr_renovated: muchos ceros que son not available.
-
 # zipcode: OK
-
-# - lat: ok
-
 # long: ok
 
-# - sqft_living15: ok
+# Javi
+# date: 
+# bedrooms: posible error en 33. Dato muy atípico.
+#     imputar como la media
+# floors: OK. Los americanos son raros
+# sqft_living: OK
+# view: OK
+# grade: posibilidad de reducir a 3 valores.
+# sqft_basement: 0 son no aplica, pues no tiene sentido.
+# yr_renovated: muchos ceros que son not available.
+# lat: ok
+# sqft_living15: ok
 
 describe(house_training$yr_built)
 
