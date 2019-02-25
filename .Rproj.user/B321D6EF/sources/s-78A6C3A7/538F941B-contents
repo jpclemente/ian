@@ -1,0 +1,84 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(readr)
+library(caret)
+library(dplyr)
+library(ggplot2)
+
+kc_house_data <- read_csv("data/kc_house_data.csv")
+
+inTraining <- createDataPartition(pull(kc_house_data, price),p = .7, list = FALSE, times = 1)
+house_training <- slice(kc_house_data, inTraining)
+house_testing <- slice(kc_house_data, -inTraining)
+
+#eda solo sobre los datos de training
+View(house_training)
+Hmisc::describe(house_training)
+
+#id está repetido. hacer un sort del date y quedarte con la más actual
+ids_duplicados <- house_training[which(duplicated(house_training$id)),]
+View(ids_duplicados)
+
+datos <-  house_training[order(house_training$date, decreasing = TRUE),] 
+datos2 <- datos[!duplicated(datos$id), ] 
+View(datos2)
+
+#IMPARES
+#date es la fecha de venta. 
+datos2[datos2$price > 5000000,]
+ggplot(data = datos2) + geom_density(aes(price))
+hist(datos2$price,col="lightcyan", breaks = 100)
+
+hist(log(datos2$price),col="lightcyan", breaks = 100)
+hist(log10(datos2$price),col="lightcyan", breaks = 100)
+
+#prize posible reescalado
+#bedrooms posible error en 33. Cogió la distancia usando las distancias e hizo la media de las que eran proximas
+#bathrooms. no se discretiza porque los decimales indican el número de "objetos". Según lo que tenga el baño, tiene una puntuacion u otra. Los que tienen 0 habitaciones y 0 baños, poner N/A
+#sqft_living. esta bien. Luego en la distribución se mirará
+#sqft_lit. esta bien. Luego en la distribución se mirará
+#floors. standby
+#waterfront. categorica
+#view. Son las vistas que tiene desde la casa. Es un ratio
+#condition. ok
+#grade. Hay que convertirlo en 3 valores. An index from 1 to 13, where 1-3 falls short of building construction and design, 7 has an average level of construction and design, and 11-13 have a high quality level of construction and design. 
+#sqft_above. OK
+#sqft_basement. dejar el 0 porque dice que no tiene sotano. Pero se podría poner N/A. tomar nuestras decisiones
+#yr_built
+#yr_renovated. hay muchos 0, poner N/A
+#ZIPCODE. ok
+#
+
+ggplot(data = house_training) + geom_density(aes(date))
+#HACER TABLA CORRELACIONES
+
+
+
+#EVA
+id
+price
+bathrooms
+sqft_lot
+waterfront
+condition
+sqft_above
+yr_built
+zipcode
+long 
+sqft_lot15
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+

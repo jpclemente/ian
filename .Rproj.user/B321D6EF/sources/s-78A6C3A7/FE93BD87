@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1550937314782.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "FE93BD87",
+    "lastKnownWriteTime" : 6,
+    "last_content_update" : 1550937314782,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "16BD9938",
+        "caption" : "house_training_WO",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=house_training_WO&cache_key=16BD9938",
+        "displayedObservations" : "15050",
+        "environment" : "",
+        "object" : "house_training_WO",
+        "preview" : "0",
+        "totalObservations" : "15050",
+        "variables" : "21"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
