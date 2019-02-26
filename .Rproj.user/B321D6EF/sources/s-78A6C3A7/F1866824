@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1550933982869.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F1866824",
+    "lastKnownWriteTime" : 1550940214,
+    "last_content_update" : 1550940214305,
+    "path" : "~/Desktop/IAN/ian/practica1.R",
+    "project_path" : "practica1.R",
+    "properties" : {
+        "cursorPosition" : "20,0",
+        "scrollLine" : "8"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
