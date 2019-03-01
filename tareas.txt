@@ -1,8 +1,11 @@
 1- EDA
 	
 	- Preparar variables pares (javi)
-		- añadir transoformaciones a funcion
+		- añadir transformaciones a funcion
 		- añadir transformaciones al .rmd
+
 	- Preparar variables impares (eva)
+		- añadir transformaciones a funcion
+		- añadir transformaciones al .rmd
+
 	- Hacer ggpairs. Ver las cualitativas y cuantitativas y dividir
-	- Crear función limpieza para los test
