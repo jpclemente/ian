@@ -1,6 +1,6 @@
 ---
 title: "registro"
-author: "Javier Pérez Clemente"
+author: "Eva Gordo Calleja, Javier Pérez Clemente"
 date: "March 1, 2019"
 output: html_document
 ---
@@ -15,13 +15,26 @@ library(ggplot2)
 library(VIM)
 ```
 
-## EDA
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
+kc_house_data <- read_csv("data/kc_house_data.csv")
+inTraining <- createDataPartition(pull(kc_house_data), p = .7, list = FALSE,times = 1)
 
+house_training <- slice(kc_house_data, inTraining)
+house_testing <- slice(kc_house_data, -inTraining)
+```
+
+## EDA
+
+La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error. Vamos a imputarlo usando los 5 vecinos más cercanos.
+
+```{r}
+summary(house_training$bedrooms)
+```
+
+```{r}
+house_training$bedrooms <- house_training$bedrooms %>% na_if(33)
+house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
+summary(house_training$bedrooms)
 ```
 

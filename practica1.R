@@ -68,17 +68,16 @@ summary(house_training_WO$bathrooms)
 # date: aparentemente está todo bien
 
 # bedrooms: posible error en 33. Dato muy atípico.
-
-# imputam como la media de las casa mas cercanas.
+# imputamos como la media de las casa mas cercanas.
 house_training_WO <- house_training_order[!duplicated(house_training_order$id), ] 
 house_training_WO$bedrooms <- house_training_WO$bedrooms %>% na_if(33)
 table(house_training_WO$bedrooms)
 summary(house_training_WO$bedrooms)
 # kNN imputation de los 5 vecinos mas cercanos:
-house1 <- kNN(house_training_WO, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
+house_training_WO <- kNN(house_training_WO, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
 # se le establece el valor de 4
 
-table(house1$bedrooms)
+
 # floors: OK. Los americanos son raros
 
 # sqft_living: OK
@@ -89,7 +88,7 @@ table(house1$bedrooms)
 
 # sqft_basement: 0 son no aplica, pues no tiene sentido.
 
-# yr_renovated: muchos ceros que son not available.
+# yr_renovated: muchos ceros que son not available. Demasiados, quizas sea bueno convertir en variable booleana que indique si ha sido renovada.
 table(house_training_WO$yr_renovated)
 house_training_WO$yr_renovated <- house_training_WO$yr_renovated %>% dplyr::na_if(0)
 table(house_training_WO$yr_renovated)
