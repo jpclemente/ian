@@ -17,6 +17,18 @@ describe(house_training)
 # EDA
 # Primer vistazo.
 
+# Eva
+# ID: hay 80 repetidos.
+# price: posible re-escalado.
+# bathrooms: OK. Los americanos son raros
+# waterfront: OK
+# sqft_lot: OK
+# condition: OK
+# sqft_above: Alta correlacion con sqft_living???
+# yr_built: (mirar con cariño)
+# zipcode: OK
+# long: ok
+
 #Ver los factores de cada variable
 str(house_training)
 
@@ -131,7 +143,18 @@ describe(house_training_WO$sqft_living15)
 table(house_training_WO$sqft_living15)
 ggplot(data = house_training_WO) + geom_density(aes(sqft_living15))
 
-
+# Javi
+# date: 
+# bedrooms: posible error en 33. Dato muy atípico.
+#     imputar como la media
+# floors: OK. Los americanos son raros
+# sqft_living: OK
+# view: OK
+# grade: posibilidad de reducir a 3 valores.
+# sqft_basement: 0 son no aplica, pues no tiene sentido.
+# yr_renovated: muchos ceros que son not available.
+# lat: ok
+# sqft_living15: ok
 
 describe(house_training$yr_built)
 
