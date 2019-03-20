@@ -9,3 +9,5 @@
 		- añadir transformaciones al .rmd
 
 	- Hacer ggpairs. Ver las cualitativas y cuantitativas y dividir
+	
+	mutate(lstat = scale(sqrt(lstat)), log_crim = scale(log(crim)), precio = medv>=30)

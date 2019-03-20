@@ -13,6 +13,8 @@ library(dplyr)
 library(Hmisc)
 library(ggplot2)
 library(VIM)
+
+source('edaFunction.R')
 ```
 
 
@@ -26,10 +28,10 @@ house_testing <- slice(kc_house_data, -inTraining)
 
 ## EDA
 
-La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error. Vamos a imputarlo usando los 5 vecinos más cercanos.
+La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error. Vamos a imputarlo por similaridad usando los 5 vecinos geográficamente más cercanos.
 
 ```{r}
-summary(house_training$bedrooms)
+eda(house_training)
 ```
 
 ```{r}

@@ -11,4 +11,3 @@ eda <- function(house_df){
   # Impute values
   house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
 }
-  

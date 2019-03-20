@@ -5,6 +5,7 @@ library(Hmisc)
 library(ggplot2)
 library(VIM)
 
+
 kc_house_data <- read_csv("data/kc_house_data.csv")
 inTraining <- createDataPartition(pull(kc_house_data), p = .7, list = FALSE,times = 1)
 
@@ -65,40 +66,10 @@ summary(house_training_WO$bathrooms)
 
 
 # Javi
-# date: aparentemente está todo bien
-
-# bedrooms: posible error en 33. Dato muy atípico.
-# imputamos como la media de las casa mas cercanas.
-house_training_WO <- house_training_order[!duplicated(house_training_order$id), ] 
-house_training_WO$bedrooms <- house_training_WO$bedrooms %>% na_if(33)
-table(house_training_WO$bedrooms)
-summary(house_training_WO$bedrooms)
-# kNN imputation de los 5 vecinos mas cercanos:
-house_training_WO <- kNN(house_training_WO, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
-# se le establece el valor de 4
-
-
-# floors: OK. Los americanos son raros
-
-# sqft_living: OK
-
-# view: OK
-
-# grade: posibilidad de reducir a 3 valores.
 
 # sqft_basement: 0 son no aplica, pues no tiene sentido.
 
 # yr_renovated: muchos ceros que son not available. Demasiados, quizas sea bueno convertir en variable booleana que indique si ha sido renovada.
 table(house_training_WO$yr_renovated)
 house_training_WO$yr_renovated <- house_training_WO$yr_renovated %>% dplyr::na_if(0)
-table(house_training_WO$yr_renovated)
-summary(house_training_WO$yr_renovated)
-# lat: ok
 
-# sqft_living15: ok
-
-describe(house_training$yr_built)
-
-table(house_training$zipcode)
-
-house_training %>% summarise(total.count=n())
