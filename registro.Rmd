@@ -56,8 +56,12 @@ summary(house_training)
 
 Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en la variable `ID`. Se han ordenado en base a la variable `date` de manera descendente para quedarnos con las fechas más actuales y eliminar las casas duplicadas que han sufrido algún cambio como puede ser una nueva reforma o un nuevo valor del precio de la vivienda.
 
+<<<<<<< HEAD
 La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
 Primero se le imputa como NA y después se realiza la función de K-NN usando los 5 vecinos más cercanos para asignarles un valor a los NAs.
+=======
+La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error. Por lo que se ha decidido imputarlo usando los 5 vecinos más cercanos.
+>>>>>>> origin/eva
 
 La variable bathrooms contiene valores a 0 y se reemplazará por NA.
 

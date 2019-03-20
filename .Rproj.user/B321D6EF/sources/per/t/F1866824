@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "3948018031",
     "id" : "F1866824",
-    "lastKnownWriteTime" : 1550940214,
-    "last_content_update" : 1550940214305,
+    "lastKnownWriteTime" : 1551124900,
+    "last_content_update" : 1551124900183,
     "path" : "~/Desktop/IAN/ian/practica1.R",
     "project_path" : "practica1.R",
     "properties" : {
-        "cursorPosition" : "20,0",
-        "scrollLine" : "8"
+        "cursorPosition" : "64,38",
+        "scrollLine" : "59"
     },
     "relative_order" : 2,
     "source_on_save" : false,

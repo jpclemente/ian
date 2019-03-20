@@ -31,6 +31,14 @@ house_testing <- slice(kc_house_data, -inTraining)
 #Ver los factores de cada variable
 str(house_training)
 
+#ver datos faltantes. No falta ninguno 
+aggr_plot <- aggr(house_training[1:10], col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE,
+                  labels=names(house_testing[1:10]), cex.axis=.7, gap=3, 
+                  ylab=c("Histogram of missing data","Pattern"))
+aggr_plot <- aggr(house_training[11:21], col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE,
+                  labels=names(house_testing[11:21]), cex.axis=.7, gap=3, 
+                  ylab=c("Histogram of missing data","Pattern"))
+
 # ID:
 
 #Vemos que hay varios ids repetidos
@@ -47,6 +55,7 @@ house_training_WO <- house_training_order[!duplicated(house_training_order$id), 
 # - date: 
 
 # price: posible re-escalado.
+table(house_training_WO$price)
 describe(house_training_WO$price)
 ggplot(data = house_training_WO) + geom_density(aes(price))
 ggplot(data = house_training_WO) + geom_density(aes(log10(price)))
@@ -57,12 +66,87 @@ ggplot(data = house_training_WO) + geom_density(aes(log10(price)))
 # bathrooms: OK. Los americanos son raros
 #se han convertido todos los baños que están a 0 en N/A. No se redondea porque según los decimales indican 
 #si es baño, aseo, etc.
+
 house_training_WO$bathrooms <- house_training_WO$bathrooms%>% dplyr::na_if(0)
 summary(house_training_WO$bathrooms)
 # View(house_training_WO)
 
+describe(house_training_WO$bathrooms)
+table(house_training_WO$bathrooms)
+house_training_WO$bathrooms[house_training_WO$bathrooms=='0'] <- NA
+house_training_WO$bathrooms <- factor(house_training_WO$bathrooms)
+ggplot(data = house_training_WO) + geom_density(aes(bathrooms))
+#?? que hacer aqui?
+View(house_training_WO)
+
+
 # - floors: OK. Los americanos son raros
 
+# waterfront: OK. ¿que hacer con este?
+describe(house_training_WO$waterfront)
+table(house_training_WO$waterfront)
+hist(house_training_WO$waterfront,col="lightcyan")
+house_training_WO$waterfront = factor(house_training_WO$waterfront)
+levels(house_training_WO$waterfront)
+# - sqft_living: OK
+
+# sqft_lot: OK.
+describe(house_training_WO$sqft_lot)
+table(house_training_WO$sqft_lot)
+ggplot(data = house_training_WO) + geom_density(aes(sqft_lot))
+ggplot(data = house_training_WO) + geom_density(aes(log(sqft_lot)))
+
+# - view: OK
+
+# condition: OK
+describe(house_training_WO$condition)
+table(house_training_WO$condition)
+ggplot(data = house_training_WO) + geom_density(aes(condition))
+#?? AQUI LINEAL?
+
+# - grade: posibilidad de reducir a 3 valores.
+
+# sqft_above: Alta correlacion con sqft_living?? Esta se puede poner con log o sin el
+describe(house_training_WO$sqft_above)
+table(house_training_WO$sqft_above)
+ggplot(data = house_training_WO) + geom_density(aes(sqft_above))
+
+# - sqft_basement: 0 son no aplica, pues no tiene sentido.
+
+# yr_built: (mirar con cariño). No entiendo qué hay de raro
+describe(house_training_WO$yr_built)
+table(house_training_WO$yr_built)
+ggplot(data = house_training_WO) + geom_density(aes(yr_built))
+
+Old <- house_training_WO[which(house_training_WO$yr_built < 1930),] 
+OldAndNoRenovated <- Old[which(Old$yr_renovated == 0),]
+View(OldAndNoRenovated)
+
+SameSqrt <- OldAndNoRenovated[OldAndNoRenovated$sqft_living == OldAndNoRenovated$sqft_living15,]
+View(SameSqrt)
+
+ggplot(data = SameSqrt) + geom_density(aes(lat))
+ggplot(data = SameSqrt) + geom_density(aes(long))
+
+
+# - yr_renovated: muchos ceros que son not available.
+
+# zipcode: OK
+describe(house_training_WO$zipcode)
+table(house_training_WO$zipcode)
+ggplot(data = house_training_WO) + geom_density(aes(zipcode))
+
+# - lat: ok
+
+# long: ok
+describe(house_training_WO$long)
+table(house_training_WO$long)
+ggplot(data = house_training_WO) + geom_density(aes(long))
+
+# - sqft_living15: ok
+describe(house_training_WO$sqft_living15)
+table(house_training_WO$sqft_living15)
+ggplot(data = house_training_WO) + geom_density(aes(sqft_living15))
 
 # Javi
 # date: aparentemente está todo bien
