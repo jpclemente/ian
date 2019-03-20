@@ -1,0 +1,68 @@
+---
+title: "registro"
+author: "Eva Gordo Calleja, Javier Pérez Clemente"
+date: "March 1, 2019"
+output:
+  rmdformats::readthedown:
+  self_contained: true
+  thumbnails: true
+  lightbox: true
+  gallery: false
+---
+
+# House Sales in King County, USA
+
+La base de datos a analizar contiene datos sobre los precios de venta sobre 2014 y 2015 en el condado  de King, Estados Unidos. 
+
+El objetivo de la práctica es construir un modelo de predicción para el precio de la vivienda (variable price), en función de tantas variables de entrada como estimemos conveniente.
+
+## Limpieza de variables
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(caret)
+library(dplyr)
+library(Hmisc)
+library(ggplot2)
+library(VIM)
+library(summarytools)
+library(glmnet)
+
+source('edaFunction.R')
+```
+
+### Train y Test
+
+Separación de los datos en training set (70% de los datos) y testing set (30% restante de los datos).
+Primero leemos el archivo y se crea una partición para separar los datos en train y test.
+```{r train test}
+kc_house_data <- read_csv("data/kc_house_data.csv")
+inTraining <- createDataPartition(pull(kc_house_data), p = .7, list = FALSE,times = 1)
+
+house_training <- slice(kc_house_data, inTraining)
+house_testing <- slice(kc_house_data, -inTraining)
+```
+
+### Exploratory Data Analysis (EDA)
+
+El EDA se realiza sobre los datos de entrenamiento. Se identifican las posibles operaciones que debemos realizar sobre los datos.
+
+De una forma general, se empieza a analizar los datos (tipo de variable, frecuencia, distribución, datos faltantes, etc.)
+```{r}
+view(dfSummary(house_training))
+summary(house_training)
+```
+
+Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en la variable `ID`. Se han ordenado en base a la variable `date` de manera descendente para quedarnos con las fechas más actuales y eliminar las casas duplicadas que han sufrido algún cambio como puede ser una nueva reforma o un nuevo valor del precio de la vivienda.
+
+La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error. Por lo que se ha decidido imputarlo usando los 5 vecinos más cercanos.
+
+La variable bathrooms contiene valores a 0 y se reemplazará por NA.
+
+```{r}
+house_training$bedrooms <- house_training$bedrooms %>% na_if(33)
+house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
+summary(house_training$bedrooms)
+```
+
