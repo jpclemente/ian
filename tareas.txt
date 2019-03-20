@@ -9,8 +9,7 @@
 		* añadir transformaciones al .rmd
 
 	- Ver las cualitativas y cuantitativas y dividir. Hacer ggpairs
-	  - price: log
-	  - 
+
 	- Transformaciones
 	- Factores (codificación de variables categóricas)
 	- Discretización de variables cuantitativas 

@@ -15,7 +15,7 @@ eda <- function(house_df){
   house_df$sqft_basement <- house_df$sqft_basement %>% dplyr::na_if(0)
   
   # Impute values
-  house_df_2 <- kNN(house_df, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
+  house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("lat", "long"), k = 5)
   
   # transformations
   house_df <- mutate(house_df, price = log(price))
