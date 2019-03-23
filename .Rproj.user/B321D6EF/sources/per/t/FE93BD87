@@ -12,14 +12,14 @@
     "path" : null,
     "project_path" : null,
     "properties" : {
-        "cacheKey" : "16BD9938",
+        "cacheKey" : "966D649B",
         "caption" : "house_training_WO",
-        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=house_training_WO&cache_key=16BD9938",
-        "displayedObservations" : "15050",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=house_training_WO&cache_key=966D649B",
+        "displayedObservations" : "15048",
         "environment" : "",
         "object" : "house_training_WO",
         "preview" : "0",
-        "totalObservations" : "15050",
+        "totalObservations" : "15048",
         "variables" : "21"
     },
     "relative_order" : 4,
