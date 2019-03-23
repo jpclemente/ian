@@ -10,7 +10,28 @@
 
 	- Ver las cualitativas y cuantitativas y dividir. Hacer ggpairs
 
-	- Transformaciones
+	* Transformaciones
 	- Factores (codificación de variables categóricas)
 	- Discretización de variables cuantitativas 
 	- ¿Validación de los valores de las variables del modelo. Identificación de errores.?
+
+2- MODELO
+	- Propuesta inicial de un modelo de predicción, basado en regresión múltiple. Selección de variables.
+	- Evaluación del rendimiento del modelo, evaluación de los coeficientes mediante validación cruzada, bootstrap y/o otros métodos.
+  	- Aplicación de las mismas transformaciones de datos al conjunto de pruebas. Evaluación de los resultados de predicción en el conjunto de pruebas
+	
+	- Antes de probar con datos de testing, queremos saber como de bien va a generalizar. La estrategia básica es la cross validation. 
+	  La idea consiste en que, los datos de TRAINING, se dividen en "k" (5-10) folds o conjuntos. Hacemos un algoritmo que itera los grupos y, para cada grupo "i",
+	  lo aparta del resto de los datos, entrena con los otros y valida con "i". Suele utilizarse msn. Se repite lo mismo con todos los grupos. Cuando saque el error 
+	  promedio de todos ellos, si en alguno de ellos tenia datos raros que provocan un ajuste con un error muy alto, voy a ser capaz de verlo con el coeficiente de 
+	  cross-validation. codigo en el libro: secion 5.3.2 funcion cv.glm() JAVI
+
+	  Esta es una medida más realista de cuanto me estoy equivocando antes de probar con testing.
+
+	  Existe una variante LOO (Leave One Out) en la que cada grupo esta formado por un único dato.
+	
+
+  NOTAS 2019-03-23
+  > La varianza depende del modelo elegido.
+    Regresion lineal -> poca varianza
+  

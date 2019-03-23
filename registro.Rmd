@@ -66,3 +66,16 @@ house_training <- eda(house_training)
 view(dfSummary(house_training))
 ```
 
+```{r}
+glm.fit = glm(price ~ ., data=house_training)
+glm.fit = glm(price ~ waterfront+view+condition+grade+yr_renovated+zipcode+lat+sqft_living15, data=house_training)
+summary(glm.fit)
+coef(glm.fit)
+
+
+cv.error.10=rep(0,10)
+for (i in 1:10){
+  glm.fit = glm(price ~ poly(waterfront+view+condition+grade+yr_renovated+zipcode+lat+sqft_living15, i), data=house_training)
+}
+```
+
