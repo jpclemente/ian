@@ -1,4 +1,4 @@
-eda <- function(house_df){
+transform <- function(house_df){
   
   # Discard duplicates.
   duplicated_ids <- house_df[which(duplicated(house_df$id)),]
