@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(corrplot)
+library(psych)
+library(GGally)
+library(Hmisc)
+library(readr)
+library(data.table)
+library(caret)
+library(summarytools)
+library(VIM)
+library(tidyr)
+library(scales)
+
+ACMET <- read_csv("ACMETelephoneABT.csv")
+View(ACMET)
+Hmisc::describe(ACMET)
+
+inTraining <- createDataPartition(pull(ACMET), p = .7, list = FALSE,times = 1)
+ACMET_training <- slice(ACMET, inTraining)
+ACMET_testing <- slice(ACMET, -inTraining)
+
+describe(ACMET_training)
+
+ACMET$regionType[which(ACMET$regionType == " unknown")] <- NA
+ACMET$regionType[ACMET$regionType=='r'] <- "rural"
+ACMET$regionType[ACMET$regionType=='s'] <- "suburban"
+ACMET$regionType[ACMET$regionType=='t'] <- "town"
+
+ACMET$creditCard[ACMET$creditCard=='f'] <- "false"
+ACMET$creditCard[ACMET$creditCard=='no'] <- "false"
+ACMET$creditCard[ACMET$creditCard=='t'] <- "true"
+ACMET$creditCard[ACMET$creditCard=='yes'] <- "true"
+
+# Asignar NAs a casos con edad = 0
+ACMET$age[which(ACMET$age == 0)] <- NA
+
+# Asumimos casos de income = 0 como NAs
+ACMET$income[which(ACMET$income == 0)] <- NA
+
+ACMET$age[ACMET$age=='0'] <- mean(ACMET$age)
+
+ACMET$churn <- factor(ACMET$churn)
+
+x = glm(churn ~ age + creditCard + customer  +  occupation + regionType + marriageStatus + children + income + numHandsets + handsetAge + smartPhone + currentHandsetPrice + creditRating + homeOwner + creditCard  +avgBill + avgMins + avgrecurringCharge + avgOverBundleMins + avgRoamCalls + callMinutesChangePct + billAmountChangePct + avgReceivedMins + avgOutCalls + avgInCalls + peakOffPeakRatio + peakOffPeakRatioChangePct + avgDroppedCalls + lifeTime + lastMonthCustomerCareCalls + numRetentionCalls + numRetentionOffersAccepted + newFrequentNumbers, family = binomial, data = ACMET)
+summary(x)
+
+x = glm(churn ~ occupation + regionType + children + handsetAge + currentHandsetPrice + avgrecurringCharge + avgMins + numRetentionCalls, family = binomial, data = ACMET)
+summary(x)
+
+xx = glm(churn ~  handsetAge, family = binomial, data = ACMET)
+summary(xx)
+
+Yhat = predict(xx, data.frame(handsetAge=ACMET_testing[,"handsetAge"]),type="response")
+Yreal = as.integer(ACMET_testing[,"churn"]=="true")
+error_test= sum(abs(Yhat-Yreal))/length(Yreal)
+error_test
+
+n_data=dim(ACMET)[1]
+n_train=round(0.7*n_data)
+n_test=n_data-n_train
+indices=1:n_data
+rep=100
+error_train_rep=c()
+error_test_rep=c()
+for (i in 1:rep)
+{
+indices_train= sample(indices,n_train)
+indices_test=indices[-indices_train]
+ACMET_training=ACMET[indices_train,]
+ACMET_testing=ACMET[indices_test,]
+glm.fit=glm(churn~handsetAge,family = binomial, data=ACMET_training)
+Yhat_train = predict(glm.fit, data.frame(handsetAge=ACMET_training[,"handsetAge"]),type="response")
+Yreal_train = as.integer(ACMET_training[,"churn"]=="true")
+error_train=sum(abs(Yhat_train-Yreal_train))/length(Yreal_train)
+error_train_rep=c(error_train_rep,error_train)
+Yhat_test = predict(glm.fit, data.frame(handsetAge=ACMET_testing[,"handsetAge"]),type="response")
+Yreal_test = as.integer(ACMET_testing[,"churn"]=="true")
+error_test=sum(abs(Yhat_test-Yreal_test))/length(Yreal_test)
+error_test_rep=c(error_test_rep,error_test)
+}
+mean(error_train_rep)
+sd(error_train_rep)
+mean(error_test_rep)
+sd(error_test_rep)
+
+
+
+
+
+
+
+regionBillMins <- ACMET %>% select(regionType, avgBill, avgMins)
+head(regionBillMins)
+regionBillMins %>% na.omit() %>% ggpairs(columns = 1:3, ggplot2::aes(colour=regionType))
+
+occupationChurnCredit <- ACMET %>% select(regionType, churn, creditCard)
+head(occupationChurnCredit)
+occupationChurnCredit %>% na.omit() %>% ggpairs(columns = 1:3, ggplot2::aes(colour=regionType))
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+

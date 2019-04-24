@@ -30,6 +30,8 @@ library(summarytools)
 library(glmnet)
 
 source('transformations.R')
+
+set.seed(12345)
 ```
 
 ### Train y Test
@@ -62,7 +64,8 @@ Primero se le imputa como NA y después se realiza la función de K-NN usando lo
 La variable bathrooms contiene valores a 0 y se reemplazará por NA.
 
 ```{r}
-house_training <- eda(house_training)
+house_training <- transform(house_training)
+house_testing <- transform(house_testing)
 view(dfSummary(house_training))
 ```
 
@@ -71,11 +74,87 @@ glm.fit = glm(price ~ ., data=house_training)
 glm.fit = glm(price ~ waterfront+view+condition+grade+yr_renovated+zipcode+lat+sqft_living15, data=house_training)
 summary(glm.fit)
 coef(glm.fit)
-
-
 cv.error.10=rep(0,10)
+y_train <- house_training$price
+y_hat <- predict(glm.fit, newdata = house_testing, type="response")
+y_real <- house_testing$price
+error_test=sum(abs(y_hat-y_real))/length(y_real)
+
+confusionMatrix(y_test,house_testing$price)
+
+
 for (i in 1:10){
-  glm.fit = glm(price ~ poly(waterfront+view+condition+grade+yr_renovated+zipcode+lat+sqft_living15, i), data=house_training)
+  glm.fit = glm(price ~ poly(., i), data=house_training)
 }
+
 ```
+
+- **Selección de variables con LASSO**
+
+Utilizaremos validación cruzada para elegir el parámetro lambda que mejor se ajuste a nuestros datos.
+Elegiremos aquel que se diferencie en una unidad de error estandar con respecto al valor de lambda óptimo (el que maximiza el AUC)
+
+```{r echo=TRUE}
+house_training <- na.omit(house_training)
+house_testing <- na.omit(house_testing)
+x_train <- model.matrix(price~.,house_training)[,-1]
+y_train <- house_training$price
+x_test <- as.matrix(house_testing %>% select(-price))
+
+x_test <- data.matrix(house_testing)
+cv.out <- cv.glmnet(x_train,y_train,alpha=1, nfolds=5, type.measure="auc")
+plot(cv.out)
+```
+
+- Valor de lamba con el que entrenaremos: 
+
+```{r echo=TRUE}
+cv.out$lambda.1se
+
+```
+
+- Coeficientes del Lasso:
+
+```{r echo=TRUE}
+tmp_coeffs <- coef(cv.out, s = "lambda.1se")
+
+tmp_coeffs
+```
+
+
+- **Predicción en Test**
+
+```{r echo=TRUE}
+lasso.pred=predict(glm.fit, newdata = house_testing, type="response")
+lasso.pred=predict(cv.out,newx = x_test, type = "")
+head(lasso.pred)
+```
+
+- **Curva ROC y métrica AUC en Test**
+
+```{r echo=TRUE}
+plot(roc(df_test$Churn, lasso.pred),
+     col="darkblue", lwd=3, main="Curve ROC")
+ModelMetrics::auc(df_test$Churn,lasso.pred)
+
+
+
+
+library(ISLR)
+library(glmnet)
+Hitters_sinNA = na.omit(Hitters)
+View(Hitters_sinNA) 
+x = model.matrix(Salary ~ ., Hitters_sinNA)[,-1] #te quita una columna extra de iterception y la columna salary
+y = Hitters_sinNA$Salary 
+View(x)
+View(y)
+train = sample(1:nrow(x), nrow(x)/2)
+View(train)
+test = -train
+y.test = y[test]
+View(y[train])
+lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda=grid)
+plot(lasso.mod)
+cv.out = cv.glmnet(x[train,], y[train], alpha=1)
+plot(cv.out)
 
