@@ -12,7 +12,7 @@ output:
 
 # House Sales in King County, USA
 
-La base de datos a analizar contiene datos sobre los precios de venta sobre 2014 y 2015 en el condado  de King, Estados Unidos. 
+La base de datos a analizar contiene datos sobre los precios de venta sobre 2014 y 2015 en el condado de King, Estados Unidos. 
 
 El objetivo de la práctica es construir un modelo de predicción para el precio de la vivienda (variable price), en función de tantas variables de entrada como estimemos conveniente.
 
@@ -21,7 +21,6 @@ El objetivo de la práctica es construir un modelo de predicción para el precio
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
-library(caret)
 library(dplyr)
 library(Hmisc)
 library(ggplot2)
@@ -38,6 +37,7 @@ set.seed(12345)
 
 Separación de los datos en training set (70% de los datos) y testing set (30% restante de los datos).
 Primero leemos el archivo y se crea una partición para separar los datos en train y test.
+
 ```{r train test}
 kc_house_data <- read_csv("data/kc_house_data.csv")
 inTraining <- createDataPartition(pull(kc_house_data), p = .7, list = FALSE,times = 1)
@@ -58,20 +58,56 @@ summary(house_training)
 
 Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en la variable `ID`. Se han ordenado en base a la variable `date` de manera descendente para quedarnos con las fechas más actuales y eliminar las casas duplicadas que han sufrido algún cambio como puede ser una nueva reforma o un nuevo valor del precio de la vivienda.
 
-La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
-Primero se le imputa como NA y después se realiza la función de K-NN usando los 5 vecinos más cercanos para asignarles un valor a los NAs.
+```{r}
+# Discard duplicated ids.
+duplicated_ids <- house_training[which(duplicated(house_training$id)),]
+house_training_order <- house_training[order(house_training$date, decreasing = TRUE),]
+house_training <- house_df_order[!duplicated(house_df_order$id), ]
+```
 
 La variable bathrooms contiene valores a 0 y se reemplazará por NA.
 
 ```{r}
-house_training <- transform(house_training)
-house_testing <- transform(house_testing)
-view(dfSummary(house_training))
+# Set NAs.
+house_df$bathrooms <- house_df$bathrooms %>% dplyr::na_if(0)
+```
+
+La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
+Primero se le imputa como NA y después se realiza la función de K-NN usando los 5 vecinos más cercanos para asignarles un valor a los NAs.
+
+```{r}
+# Impute values
+house_df$bedrooms <- house_df$bedrooms %>% dplyr::na_if(33)
+house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
 ```
 
 ```{r}
+# Impute values
+house_df$bedrooms <- house_df$bedrooms %>% dplyr::na_if(33)
+house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
+```
+
+Las siguientes variables muestran grandes colas que indican que seria requerible transformarlas usando el logaritmo:
+
+```{r}
+# logarithmic plots
+
+```
+
+
+```{r}
+# logarithmic transformations
+house_df <- mutate(house_df, price = log(price))
+house_df <- mutate(house_df, sqft_living = log(sqft_living))
+house_df <- mutate(house_df, sqft_lot = log(sqft_lot))
+house_df <- mutate(house_df, sqft_lot15 = log(sqft_lot15))
+```
+
+
+
+```{r}
 glm.fit = glm(price ~ ., data=house_training)
-glm.fit = glm(price ~ waterfront+view+condition+grade+yr_renovated+zipcode+lat+sqft_living15, data=house_training)
+
 summary(glm.fit)
 coef(glm.fit)
 cv.error.10=rep(0,10)
@@ -79,38 +115,28 @@ y_train <- house_training$price
 y_hat <- predict(glm.fit, newdata = house_testing, type="response")
 y_real <- house_testing$price
 error_test=sum(abs(y_hat-y_real))/length(y_real)
-
-confusionMatrix(y_test,house_testing$price)
-
-
-for (i in 1:10){
-  glm.fit = glm(price ~ poly(., i), data=house_training)
-}
-
 ```
 
-- **Selección de variables con LASSO**
+- **4. Selección de variables con LASSO**
 
 Utilizaremos validación cruzada para elegir el parámetro lambda que mejor se ajuste a nuestros datos.
 Elegiremos aquel que se diferencie en una unidad de error estandar con respecto al valor de lambda óptimo (el que maximiza el AUC)
 
 ```{r echo=TRUE}
 house_training <- na.omit(house_training)
-house_testing <- na.omit(house_testing)
 x_train <- model.matrix(price~.,house_training)[,-1]
 y_train <- house_training$price
-x_test <- as.matrix(house_testing %>% select(-price))
 
-x_test <- data.matrix(house_testing)
-cv.out <- cv.glmnet(x_train,y_train,alpha=1, nfolds=5, type.measure="auc")
+cv.out <- cv.glmnet(x_train, y_train, alpha=1, nfolds=10, type.measure="mse")
 plot(cv.out)
 ```
+
+Se observa que el error cuadrático medio para lambda0 y lambda1 es muy pequeño, signo de que jlo que es un buen síntoma.
 
 - Valor de lamba con el que entrenaremos: 
 
 ```{r echo=TRUE}
 cv.out$lambda.1se
-
 ```
 
 - Coeficientes del Lasso:
@@ -122,39 +148,15 @@ tmp_coeffs
 ```
 
 
-- **Predicción en Test**
+- **5. Predicción en Test**
 
 ```{r echo=TRUE}
-lasso.pred=predict(glm.fit, newdata = house_testing, type="response")
-lasso.pred=predict(cv.out,newx = x_test, type = "")
-head(lasso.pred)
+house_testing <- transform(house_testing)
+house_testing <- na.omit(house_testing)
+x_test <- data.matrix(house_testing %>% select(-price))
+
+y_predicted_test=predict(cv.out,newx = x_test, type = "response")
+y_real_test = house_testing$price
+
+mean((y_real_test - y_predicted_test)^2)
 ```
-
-- **Curva ROC y métrica AUC en Test**
-
-```{r echo=TRUE}
-plot(roc(df_test$Churn, lasso.pred),
-     col="darkblue", lwd=3, main="Curve ROC")
-ModelMetrics::auc(df_test$Churn,lasso.pred)
-
-
-
-
-library(ISLR)
-library(glmnet)
-Hitters_sinNA = na.omit(Hitters)
-View(Hitters_sinNA) 
-x = model.matrix(Salary ~ ., Hitters_sinNA)[,-1] #te quita una columna extra de iterception y la columna salary
-y = Hitters_sinNA$Salary 
-View(x)
-View(y)
-train = sample(1:nrow(x), nrow(x)/2)
-View(train)
-test = -train
-y.test = y[test]
-View(y[train])
-lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda=grid)
-plot(lasso.mod)
-cv.out = cv.glmnet(x[train,], y[train], alpha=1)
-plot(cv.out)
-
