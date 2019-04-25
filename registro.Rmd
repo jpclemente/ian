@@ -20,6 +20,7 @@ El objetivo de la práctica es construir un modelo de predicción para el precio
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(caret)
 library(readr)
 library(dplyr)
 library(Hmisc)
@@ -52,7 +53,6 @@ El EDA se realiza sobre los datos de entrenamiento. Se identifican las posibles 
 
 De una forma general, se empieza a analizar los datos (tipo de variable, frecuencia, distribución, datos faltantes, etc.)
 ```{r}
-view(dfSummary(house_training))
 summary(house_training)
 ```
 
@@ -62,14 +62,20 @@ Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en l
 # Discard duplicated ids.
 duplicated_ids <- house_training[which(duplicated(house_training$id)),]
 house_training_order <- house_training[order(house_training$date, decreasing = TRUE),]
-house_training <- house_df_order[!duplicated(house_df_order$id), ]
+house_training <- house_training_order[!duplicated(house_training_order$id), ]
 ```
 
 La variable bathrooms contiene valores a 0 y se reemplazará por NA.
 
 ```{r}
 # Set NAs.
-house_df$bathrooms <- house_df$bathrooms %>% dplyr::na_if(0)
+house_training$bathrooms <- house_training$bathrooms %>% dplyr::na_if(0)
+```
+
+```{r}
+# Binary variables
+house_training <- house_training %>% mutate(has_basement = if_else(sqft_basement == 0, 0,1))
+house_training <- house_training %>% mutate(renovated = if_else(yr_renovated == 0, 0,1))
 ```
 
 La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
@@ -77,33 +83,28 @@ Primero se le imputa como NA y después se realiza la función de K-NN usando lo
 
 ```{r}
 # Impute values
-house_df$bedrooms <- house_df$bedrooms %>% dplyr::na_if(33)
-house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
-```
-
-```{r}
-# Impute values
-house_df$bedrooms <- house_df$bedrooms %>% dplyr::na_if(33)
-house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
+house_training$bedrooms <- house_training$bedrooms %>% dplyr::na_if(33)
+house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
 ```
 
 Las siguientes variables muestran grandes colas que indican que seria requerible transformarlas usando el logaritmo:
 
 ```{r}
 # logarithmic plots
-
+house_training
 ```
 
 
 ```{r}
 # logarithmic transformations
-house_df <- mutate(house_df, price = log(price))
-house_df <- mutate(house_df, sqft_living = log(sqft_living))
-house_df <- mutate(house_df, sqft_lot = log(sqft_lot))
-house_df <- mutate(house_df, sqft_lot15 = log(sqft_lot15))
+house_training <- mutate(house_training, price = log(price))
+house_training <- mutate(house_training, sqft_living = log(sqft_living))
+house_training <- mutate(house_training, sqft_lot = log(sqft_lot))
+house_training <- mutate(house_training, sqft_lot15 = log(sqft_lot15))
 ```
 
 
+## Regresión múltiple
 
 ```{r}
 glm.fit = glm(price ~ ., data=house_training)
@@ -117,7 +118,7 @@ y_real <- house_testing$price
 error_test=sum(abs(y_hat-y_real))/length(y_real)
 ```
 
-- **4. Selección de variables con LASSO**
+## 4. Selección de variables con LASSO
 
 Utilizaremos validación cruzada para elegir el parámetro lambda que mejor se ajuste a nuestros datos.
 Elegiremos aquel que se diferencie en una unidad de error estandar con respecto al valor de lambda óptimo (el que maximiza el AUC)
