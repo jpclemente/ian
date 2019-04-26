@@ -15,7 +15,7 @@ transform <- function(house_df){
   
   # Impute values
   house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
-  #house_df <- kNN(house_df, variable = c("bathrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
+  house_df <- kNN(house_df, variable = c("bathrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
   
   # logarithmic transformations
   house_df <- mutate(house_df, price = log(price))
@@ -24,14 +24,13 @@ transform <- function(house_df){
   house_df <- mutate(house_df, sqft_lot15 = log(sqft_lot15))
   
   #dummies
-  house_df$grade_range <- ifelse(house_df$grade %in% c(1,2,3), 1, 
-                                ifelse(house_df$grade %in% c(4,5,6), 2,
-                                ifelse(house_df$grade %in% c(7,8,9), 3, 4)))  
+  house_df$grade_range <- ifelse(house_df$grade %in% c(1,2,3,4,5,6), 1, 
+                                 ifelse(house_df$grade %in% c(7,8,9),2,3)) 
   
   grade <- factor(house_df$grade_range)
   house_df <- house_df %>% cbind(model.matrix(~grade)[,-1])
 
-  # Impute values
+  #Impute values
   house_df <- kNN(house_df, variable = c("bedrooms"), dist_var = c("sqft_living", "floors", "has_basement", "grade2", "grade3", "grade4"), k = 5, imp_var = FALSE)
   #house_df <- kNN(house_df, variable = c("bathrooms"), dist_var = c("sqft_living", "floors"), k = 5, imp_var = FALSE)
   

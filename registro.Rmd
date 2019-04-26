@@ -19,19 +19,26 @@ El objetivo de la práctica es construir un modelo de predicción para el precio
 ## Limpieza de variables
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 library(readr)
 library(dplyr)
 library(Hmisc)
+library(gtable)
+library(grid)
+library(gridExtra)
 library(ggplot2)
 library(VIM)
 library(summarytools)
 library(glmnet)
+library(kableExtra)
+library(knitr)
+library(Matrix)
 
-source('transformations.R')
+knitr::opts_chunk$set(echo = TRUE)
 
 set.seed(12345)
+
+source('transformations.R')
 ```
 
 ### Train y Test
@@ -53,8 +60,10 @@ El EDA se realiza sobre los datos de entrenamiento. Se identifican las posibles 
 
 De una forma general, se empieza a analizar los datos (tipo de variable, frecuencia, distribución, datos faltantes, etc.)
 ```{r}
-summary(house_training)
+dfSummary(house_training)
 ```
+
+### Eliminación de ids duplicados
 
 Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en la variable `ID`. Se han ordenado en base a la variable `date` de manera descendente para quedarnos con las fechas más actuales y eliminar las casas duplicadas que han sufrido algún cambio como puede ser una nueva reforma o un nuevo valor del precio de la vivienda.
 
@@ -65,12 +74,12 @@ house_training_order <- house_training[order(house_training$date, decreasing = T
 house_training <- house_training_order[!duplicated(house_training_order$id), ]
 ```
 
-La variable bathrooms contiene valores a 0 y se reemplazará por NA.
 
-```{r}
-# Set NAs.
-house_training$bathrooms <- house_training$bathrooms %>% dplyr::na_if(0)
-```
+### Variables binarias
+
+En el caso de la variable `sqft_basement`, puede haber casas que no tengan sótano, por lo que se ha decidido modificar esta variable con 0 si no tiene sótano y 1 en el caso contrario.
+
+Con la variable `yr_renovated` pasa lo mismo, contenía bastantes ceros, por lo que se han decidido cambiar esta dos variable por 0 si no ha sido renovado y 1 si lo ha sido.
 
 ```{r}
 # Binary variables
@@ -78,7 +87,33 @@ house_training <- house_training %>% mutate(has_basement = if_else(sqft_basement
 house_training <- house_training %>% mutate(renovated = if_else(yr_renovated == 0, 0,1))
 ```
 
+```{r}
+# Discard duplicated ids.
+p1 <- house_training %>% ggplot() + geom_density(aes(sqft_basement))
+p2 <- house_training %>% ggplot() + geom_bar(aes(has_basement))
+p3 <- house_training %>% ggplot() + geom_density(aes(yr_renovated))
+p4 <- house_training %>% ggplot() + geom_bar(aes(renovated))
+grid.arrange(p1, p2, p3, p4, nrow=2)
+```
+
+### Imputación de variables
+
+La variable bathrooms contiene valores a 0 y se reemplazará por NA porque no puede existir una casa que tenga 0 baños.
+
+```{r}
+# Set NAs.
+house_training$bathrooms <- house_training$bathrooms %>% dplyr::na_if(0)
+house_training <- kNN(house_training, variable = c("bathrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
+```
+
+
 La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
+
+```{r, echo=FALSE}
+# Impute values
+freq(house_training$bedrooms)
+```
+
 Primero se le imputa como NA y después se realiza la función de K-NN usando los 5 vecinos más cercanos para asignarles un valor a los NAs.
 
 ```{r}
@@ -87,11 +122,24 @@ house_training$bedrooms <- house_training$bedrooms %>% dplyr::na_if(33)
 house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
 ```
 
+
+### Transformaciones logarítmicas
+
 Las siguientes variables muestran grandes colas que indican que seria requerible transformarlas usando el logaritmo:
 
-```{r}
+```{r, echo=FALSE}
 # logarithmic plots
-house_training
+par(mfrow=c(2,4))
+p1 <- house_training %>% ggplot() + geom_density(aes(price))
+p2 <- house_training %>% ggplot() + geom_density(aes(log(price)))
+p3 <- house_training %>% ggplot() + geom_density(aes(sqft_living))
+p4 <- house_training %>% ggplot() + geom_density(aes(log(sqft_living)))
+p5 <- house_training %>% ggplot() + geom_density(aes(sqft_lot))
+p6 <- house_training %>% ggplot() + geom_density(aes(log(sqft_lot)))
+p7 <- house_training %>% ggplot() + geom_density(aes(sqft_lot15))
+p8 <- house_training %>% ggplot() + geom_density(aes(log(sqft_lot15)))
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=4)
 ```
 
 
@@ -104,18 +152,41 @@ house_training <- mutate(house_training, sqft_lot15 = log(sqft_lot15))
 ```
 
 
-## Regresión múltiple
+```{r}
+# dummies
+house_training$grade_range <- ifelse(house_training$grade %in% c(1,2,3,4,5,6), 1, 
+                              ifelse(house_training$grade %in% c(7,8,9),2,3)) 
+
+p1 <- house_training %>% ggplot() + geom_bar(aes(grade), fill = 'tomato1')
+p2 <- house_training %>% ggplot() + geom_bar(aes(grade_range), fill = 'aquamarine3')
+
+grid.arrange(p1, p2, nrow=1)
+```
+
+
+```{r}
+grade <- factor(house_training$grade_range)
+house_training <- house_training %>% cbind(model.matrix(~grade)[,-1])
+```
+
+```{r}
+house_training <- house_training %>% select(-c(id, sqft_basement, yr_renovated, grade, grade_range))
+```
+
+
+## 3. Regresión múltiple
 
 ```{r}
 glm.fit = glm(price ~ ., data=house_training)
 
 summary(glm.fit)
-coef(glm.fit)
-cv.error.10=rep(0,10)
-y_train <- house_training$price
-y_hat <- predict(glm.fit, newdata = house_testing, type="response")
-y_real <- house_testing$price
-error_test=sum(abs(y_hat-y_real))/length(y_real)
+#coef(glm.fit)
+#cv.error.10=rep(0,10)
+#y_train <- house_training$price
+#y_hat <- predict(glm.fit, newdata = house_testing, type="response")
+#y_real <- house_testing$price
+#error_test=sum(abs(y_hat-y_real))/length(y_real)
+#error_test
 ```
 
 ## 4. Selección de variables con LASSO
@@ -124,7 +195,7 @@ Utilizaremos validación cruzada para elegir el parámetro lambda que mejor se a
 Elegiremos aquel que se diferencie en una unidad de error estandar con respecto al valor de lambda óptimo (el que maximiza el AUC)
 
 ```{r echo=TRUE}
-house_training <- na.omit(house_training)
+#house_training <- na.omit(house_training)
 x_train <- model.matrix(price~.,house_training)[,-1]
 y_train <- house_training$price
 
@@ -144,16 +215,14 @@ cv.out$lambda.1se
 
 ```{r echo=TRUE}
 tmp_coeffs <- coef(cv.out, s = "lambda.1se")
-
 tmp_coeffs
 ```
 
 
-- **5. Predicción en Test**
+## 5. Evaluacion de los resultados
 
 ```{r echo=TRUE}
 house_testing <- transform(house_testing)
-house_testing <- na.omit(house_testing)
 x_test <- data.matrix(house_testing %>% select(-price))
 
 y_predicted_test=predict(cv.out,newx = x_test, type = "response")

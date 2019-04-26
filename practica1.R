@@ -1,6 +1,7 @@
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(dplyr)
+library(caret)
 library(Hmisc)
 library(ggplot2)
 library(VIM)
@@ -19,9 +20,14 @@ house_testing <- slice(kc_house_data, -inTraining)
 
 house_training <- transform(house_training)
 
-
 house_training <- na.omit(house_training)
 house_testing <- na.omit(house_testing)
+
+glm.fit = glm(price ~ ., data=house_training)
+
+
+
+
 x_train <- model.matrix(price~.,house_training)[,-1]
 y_train <- house_training$price
 
@@ -37,4 +43,6 @@ y = (y_real_test - y_predicted_test)^2
 mean(y)
 
 
-plot(cv.out)
+#plot(cv.out)
+
+freq(house_training$bedrooms, plain.ascii = FALSE, style = "rmarkdown")
