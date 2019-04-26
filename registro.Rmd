@@ -1,7 +1,7 @@
 ---
-title: "registro"
+title: "Practica de Inteligencia y Analítica de Negocio"
 author: "Eva Gordo Calleja, Javier Pérez Clemente"
-date: "March 1, 2019"
+date: "26 de Abril de 2019"
 output:
   rmdformats::readthedown:
   self_contained: true
@@ -10,15 +10,16 @@ output:
   gallery: false
 ---
 
-# House Sales in King County, USA
+# Introducción
 
 La base de datos a analizar contiene datos sobre los precios de venta sobre 2014 y 2015 en el condado de King, Estados Unidos. 
 
 El objetivo de la práctica es construir un modelo de predicción para el precio de la vivienda (variable price), en función de tantas variables de entrada como estimemos conveniente.
 
-## Limpieza de variables
+# Limpieza de variables
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 library(readr)
 library(dplyr)
@@ -30,11 +31,7 @@ library(ggplot2)
 library(VIM)
 library(summarytools)
 library(glmnet)
-library(kableExtra)
-library(knitr)
 library(Matrix)
-
-knitr::opts_chunk$set(echo = TRUE)
 
 set.seed(12345)
 
@@ -68,7 +65,6 @@ summary(house_training)
 Al hacer la limpieza con los datos de entrenamiento, encontramos duplicados en la variable `ID`. Se han ordenado en base a la variable `date` de manera descendente para quedarnos con las fechas más actuales y eliminar las casas duplicadas que han sufrido algún cambio como puede ser una nueva reforma o un nuevo valor del precio de la vivienda.
 
 ```{r}
-# Discard duplicated ids.
 duplicated_ids <- house_training[which(duplicated(house_training$id)),]
 house_training_order <- house_training[order(house_training$date, decreasing = TRUE),]
 house_training <- house_training_order[!duplicated(house_training_order$id), ]
@@ -77,7 +73,7 @@ house_training <- house_training_order[!duplicated(house_training_order$id), ]
 
 ### Variables binarias
 
-En el caso de la variable `sqft_basement`, puede haber casas que no tengan sótano, por lo que se ha decidido modificar esta variable con 0 si no tiene sótano y 1 en el caso contrario.
+En el caso de la variable `sqft_basement`, encontramos que el factor verdaderamente importante es si la casa tiene sótano o no, por lo que se ha decidido transformar esta variable a 0 si no tiene y 1 en el caso contrario.
 
 Con la variable `yr_renovated` pasa lo mismo, contenía bastantes ceros, por lo que se han decidido cambiar esta dos variable por 0 si no ha sido renovado y 1 si lo ha sido.
 
@@ -85,9 +81,7 @@ Con la variable `yr_renovated` pasa lo mismo, contenía bastantes ceros, por lo 
 # Binary variables
 house_training <- house_training %>% mutate(has_basement = if_else(sqft_basement == 0, 0,1))
 house_training <- house_training %>% mutate(renovated = if_else(yr_renovated == 0, 0,1))
-```
 
-```{r}
 p1 <- house_training %>% ggplot() + geom_density(aes(sqft_basement), fill='tomato1')
 p2 <- house_training %>% ggplot() + geom_bar(aes(has_basement), fill = 'aquamarine3')
 p3 <- house_training %>% ggplot() + geom_density(aes(yr_renovated), fill='tomato1')
@@ -97,34 +91,27 @@ grid.arrange(p1, p2, p3, p4, nrow=2)
 
 ### Imputación de variables
 
-La variable bathrooms contiene valores a 0 y se reemplazará por NA porque no puede existir una casa que tenga 0 baños.
-
-```{r}
-# Set NAs.
-house_training$bathrooms <- house_training$bathrooms %>% dplyr::na_if(0)
-house_training <- kNN(house_training, variable = c("bathrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
-```
-
-
-La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
+La variable bathrooms contiene valores a 0 y se reemplazará por NA porque consideramos que no puede existir una casa que tenga 0 baños. Por otro lado, La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
 
 ```{r, echo=FALSE}
 freq(house_training$bedrooms)
 ```
 
-Primero se le imputa como NA y después se realiza la función de K-NN usando los 5 vecinos más cercanos para asignarles un valor a los NAs.
+Primero se les imputa como NA y después se usa la función KNN con los 5 vecinos más cercanos en funcion de la superficie habitable, el número de pisos y si tiene sótano o no para asignarles un valor a los NAs.
 
 ```{r}
 # Impute values
 house_training$bedrooms <- house_training$bedrooms %>% dplyr::na_if(33)
+house_training$bathrooms <- house_training$bathrooms %>% dplyr::na_if(0)
 house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
+house_training <- kNN(house_training, variable = c("bathrooms"), dist_var = c("sqft_living", "floors", "has_basement"), k = 5, imp_var = FALSE)
+
 ```
 
 
 ### Transformaciones logarítmicas
 
-Las siguientes variables muestran grandes colas que indican que seria requerible transformarlas usando el logaritmo:
-
+Las siguientes variables muestran distribuciones con grandes colas que indican que seria requerible transformarlas usando el logaritmo:
 
 ```{r, echo=FALSE, fig.height=7, fig.width=8}
 # logarithmic transformations
@@ -160,12 +147,14 @@ p2 <- house_training %>% ggplot() + geom_bar(aes(grade_range), fill = 'aquamarin
 grid.arrange(p1, p2, nrow=1)
 ```
 
-Creamos una variable dummy por cada uno de los valores de la variable `grade_range`.
+Creamos una variable dummy por cada uno de los valores de la nueva variable `grade_range`.
 ```{r}
 grade <- factor(house_training$grade_range)
 house_training <- house_training %>% cbind(model.matrix(~grade)[,-1])
 ```
 
+
+### Eliminación de variables obsoletas
 
 Finalmente, eliminamos todas las variables que han sido sustituidas por sus trnsformadas.
 
@@ -174,11 +163,11 @@ house_training <- house_training %>% select(-c(id, sqft_basement, yr_renovated, 
 ```
 
 
-## 3. Selección de variables y entrenamiento del modelo
+# Selección de variables, entrenamiento y regularización del modelo
 
 Para identificar qué variables son importantes y por tanto deben ser incluidas en el modelo, utilizamos el método LASSO (least absolute shrinkage and selection operator). Este método realiza selección de variables y estimación de parámetros simultanea, ya que reduce a cero los coeficientes de las variables que deben quedar fuera del modelo. 
 
-Realizamos validación cruzada troceando el conjunto de entrenamiento en 10 rodajas, de forma que realizamos 10 iteraciones en las que una de las rodajas es utilizada como datos de validación y las demás como conjunto de entrenamiento. Así, podremos seleccionar el valor de lambda que minimice el error cuadrático medio.
+Realizamos validación cruzada troceando el conjunto de entrenamiento en 10 rodajas, de forma que se relizan 10 iteraciones en las que una de las "rodajas" es utilizada como datos de validación y las demás como conjunto de entrenamiento. Así, podremos seleccionar el valor de lambda que minimice el error cuadrático medio y nos devuelva ell modelo más regular.
 
 ```{r echo=TRUE}
 #house_training <- na.omit(house_training)
@@ -206,7 +195,7 @@ tmp_coeffs
 En este caso, el método LASSO nos indica que solo la variable transformada log_sqft_lot queda fuera del modelo.
 
 
-## 4. Evaluacion de los resultados.
+# Evaluacion de los resultados.
 
 Para comprobar como de bueno es nuestro modelo, utilizamos los datos de test, sobre los que es necesario aplicar las mismas transformaciones que hicimos sobre el conjunto de entrenamiento. Calculamos el error cuadrático medio para evaluar los resultados predichos.
 
