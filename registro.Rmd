@@ -167,7 +167,7 @@ house_training <- house_training %>% select(-c(id, sqft_basement, yr_renovated, 
 
 Para identificar qué variables son importantes y por tanto deben ser incluidas en el modelo, utilizamos el método LASSO (least absolute shrinkage and selection operator). Este método realiza selección de variables y estimación de parámetros simultanea, ya que reduce a cero los coeficientes de las variables que deben quedar fuera del modelo. 
 
-Realizamos validación cruzada troceando el conjunto de entrenamiento en 10 rodajas, de forma que se relizan 10 iteraciones en las que una de las "rodajas" es utilizada como datos de validación y las demás como conjunto de entrenamiento. Así, podremos seleccionar el valor de lambda que minimice el error cuadrático medio y nos devuelva ell modelo más regular.
+Realizamos validación cruzada troceando el conjunto de entrenamiento en 10 rodajas, de forma que se relizan 10 iteraciones en las que una de las "rodajas" es utilizada como datos de validación y las demás como conjunto de entrenamiento. Así, podremos seleccionar el valor de lambda que minimice el error cuadrático medio y nos devuelva el modelo más regular.
 
 ```{r echo=TRUE}
 #house_training <- na.omit(house_training)
