@@ -60,7 +60,7 @@ El EDA se realiza sobre los datos de entrenamiento. Se identifican las posibles 
 
 De una forma general, se empieza a analizar los datos (tipo de variable, frecuencia, distribución, datos faltantes, etc.)
 ```{r}
-dfSummary(house_training)
+summary(house_training)
 ```
 
 ### Eliminación de ids duplicados
@@ -88,11 +88,10 @@ house_training <- house_training %>% mutate(renovated = if_else(yr_renovated == 
 ```
 
 ```{r}
-# Discard duplicated ids.
-p1 <- house_training %>% ggplot() + geom_density(aes(sqft_basement))
-p2 <- house_training %>% ggplot() + geom_bar(aes(has_basement))
-p3 <- house_training %>% ggplot() + geom_density(aes(yr_renovated))
-p4 <- house_training %>% ggplot() + geom_bar(aes(renovated))
+p1 <- house_training %>% ggplot() + geom_density(aes(sqft_basement), fill='tomato1')
+p2 <- house_training %>% ggplot() + geom_bar(aes(has_basement), fill = 'aquamarine3')
+p3 <- house_training %>% ggplot() + geom_density(aes(yr_renovated), fill='tomato1')
+p4 <- house_training %>% ggplot() + geom_bar(aes(renovated), fill = 'aquamarine3')
 grid.arrange(p1, p2, p3, p4, nrow=2)
 ```
 
@@ -110,7 +109,6 @@ house_training <- kNN(house_training, variable = c("bathrooms"), dist_var = c("s
 La variable bedrooms contiene un único valor extremadamente átipico de 33 que parece ser un error.
 
 ```{r, echo=FALSE}
-# Impute values
 freq(house_training$bedrooms)
 ```
 
@@ -127,106 +125,99 @@ house_training <- kNN(house_training, variable = c("bedrooms"), dist_var = c("sq
 
 Las siguientes variables muestran grandes colas que indican que seria requerible transformarlas usando el logaritmo:
 
-```{r, echo=FALSE}
-# logarithmic plots
+
+```{r, echo=FALSE, fig.height=7, fig.width=8}
+# logarithmic transformations
+house_training <- mutate(house_training, log_price = log(price))
+house_training <- mutate(house_training, log_sqft_living = log(sqft_living))
+house_training <- mutate(house_training, log_sqft_lot = log(sqft_lot))
+house_training <- mutate(house_training, log_sqft_lot15 = log(sqft_lot15))
+
 par(mfrow=c(2,4))
-p1 <- house_training %>% ggplot() + geom_density(aes(price))
-p2 <- house_training %>% ggplot() + geom_density(aes(log(price)))
-p3 <- house_training %>% ggplot() + geom_density(aes(sqft_living))
-p4 <- house_training %>% ggplot() + geom_density(aes(log(sqft_living)))
-p5 <- house_training %>% ggplot() + geom_density(aes(sqft_lot))
-p6 <- house_training %>% ggplot() + geom_density(aes(log(sqft_lot)))
-p7 <- house_training %>% ggplot() + geom_density(aes(sqft_lot15))
-p8 <- house_training %>% ggplot() + geom_density(aes(log(sqft_lot15)))
+p1 <- house_training %>% ggplot() + geom_density(aes(price), fill='tomato1')
+p2 <- house_training %>% ggplot() + geom_density(aes(log_price), fill = 'aquamarine3')
+p3 <- house_training %>% ggplot() + geom_density(aes(sqft_living), fill='tomato1')
+p4 <- house_training %>% ggplot() + geom_density(aes(log_sqft_living), fill = 'aquamarine3')
+p5 <- house_training %>% ggplot() + geom_density(aes(sqft_lot), fill='tomato1')
+p6 <- house_training %>% ggplot() + geom_density(aes(log_sqft_lot), fill = 'aquamarine3')
+p7 <- house_training %>% ggplot() + geom_density(aes(sqft_lot15), fill='tomato1')
+p8 <- house_training %>% ggplot() + geom_density(aes(log_sqft_lot15), fill = 'aquamarine3')
 
 grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, nrow=4)
 ```
 
+### Variables dummies
+
+Transformamos la variable `grade` en un rango `grade_range` con dos únicos valores.
 
 ```{r}
-# logarithmic transformations
-house_training <- mutate(house_training, price = log(price))
-house_training <- mutate(house_training, sqft_living = log(sqft_living))
-house_training <- mutate(house_training, sqft_lot = log(sqft_lot))
-house_training <- mutate(house_training, sqft_lot15 = log(sqft_lot15))
-```
-
-
-```{r}
-# dummies
 house_training$grade_range <- ifelse(house_training$grade %in% c(1,2,3,4,5,6), 1, 
                               ifelse(house_training$grade %in% c(7,8,9),2,3)) 
 
-p1 <- house_training %>% ggplot() + geom_bar(aes(grade), fill = 'tomato1')
+p1 <- house_training %>% ggplot() + geom_bar(aes(grade), fill = 'tomato')
 p2 <- house_training %>% ggplot() + geom_bar(aes(grade_range), fill = 'aquamarine3')
 
 grid.arrange(p1, p2, nrow=1)
 ```
 
-
+Creamos una variable dummy por cada uno de los valores de la variable `grade_range`.
 ```{r}
 grade <- factor(house_training$grade_range)
 house_training <- house_training %>% cbind(model.matrix(~grade)[,-1])
 ```
 
+
+Finalmente, eliminamos todas las variables que han sido sustituidas por sus trnsformadas.
+
 ```{r}
-house_training <- house_training %>% select(-c(id, sqft_basement, yr_renovated, grade, grade_range))
+house_training <- house_training %>% select(-c(id, sqft_basement, yr_renovated, grade, grade_range, price, sqft_living, sqft_lot, sqft_lot15))
 ```
 
 
-## 3. Regresión múltiple
+## 3. Selección de variables y entrenamiento del modelo
 
-```{r}
-glm.fit = glm(price ~ ., data=house_training)
+Para identificar qué variables son importantes y por tanto deben ser incluidas en el modelo, utilizamos el método LASSO (least absolute shrinkage and selection operator). Este método realiza selección de variables y estimación de parámetros simultanea, ya que reduce a cero los coeficientes de las variables que deben quedar fuera del modelo. 
 
-summary(glm.fit)
-#coef(glm.fit)
-#cv.error.10=rep(0,10)
-#y_train <- house_training$price
-#y_hat <- predict(glm.fit, newdata = house_testing, type="response")
-#y_real <- house_testing$price
-#error_test=sum(abs(y_hat-y_real))/length(y_real)
-#error_test
-```
-
-## 4. Selección de variables con LASSO
-
-Utilizaremos validación cruzada para elegir el parámetro lambda que mejor se ajuste a nuestros datos.
-Elegiremos aquel que se diferencie en una unidad de error estandar con respecto al valor de lambda óptimo (el que maximiza el AUC)
+Realizamos validación cruzada troceando el conjunto de entrenamiento en 10 rodajas, de forma que realizamos 10 iteraciones en las que una de las rodajas es utilizada como datos de validación y las demás como conjunto de entrenamiento. Así, podremos seleccionar el valor de lambda que minimice el error cuadrático medio.
 
 ```{r echo=TRUE}
 #house_training <- na.omit(house_training)
-x_train <- model.matrix(price~.,house_training)[,-1]
-y_train <- house_training$price
+x_train <- model.matrix(log_price~.,house_training)[,-1]
+y_train <- house_training$log_price
 
 cv.out <- cv.glmnet(x_train, y_train, alpha=1, nfolds=10, type.measure="mse")
 plot(cv.out)
 ```
 
-Se observa que el error cuadrático medio para lambda0 y lambda1 es muy pequeño, signo de que jlo que es un buen síntoma.
-
-- Valor de lamba con el que entrenaremos: 
+Se observa que el error cuadrático medio para lambda0 y lambda1 es muy pequeño, lo que es un buen síntoma. Nos quedamos con lambda.1se, 
+que es el valor que proporciona el modelo mas regular cuyo error se encuentra a una unidad de errror estandar del mínimo.
 
 ```{r echo=TRUE}
 cv.out$lambda.1se
 ```
 
-- Coeficientes del Lasso:
+De esta forma, obtenemos los coeficientes de la regresión para cada una de nuestras variables.
 
 ```{r echo=TRUE}
 tmp_coeffs <- coef(cv.out, s = "lambda.1se")
 tmp_coeffs
 ```
 
+En este caso, el método LASSO nos indica que solo la variable transformada log_sqft_lot queda fuera del modelo.
 
-## 5. Evaluacion de los resultados
 
-```{r echo=TRUE}
+## 4. Evaluacion de los resultados.
+
+Para comprobar como de bueno es nuestro modelo, utilizamos los datos de test, sobre los que es necesario aplicar las mismas transformaciones que hicimos sobre el conjunto de entrenamiento. Calculamos el error cuadrático medio para evaluar los resultados predichos.
+
+```{r echo=TRUE, warning=FALSE}
 house_testing <- transform(house_testing)
-x_test <- data.matrix(house_testing %>% select(-price))
-
+x_test <- data.matrix(house_testing %>% select(-log_price))
+y_real_test = house_testing$log_price
 y_predicted_test=predict(cv.out,newx = x_test, type = "response")
-y_real_test = house_testing$price
+
 
 mean((y_real_test - y_predicted_test)^2)
 ```
+
+Se trata realmente de un error pequeño (dos ordenes de magnitud por debajo de los datos predichos), lo que indica que nuestro modelo funciona razonablemente bien.
